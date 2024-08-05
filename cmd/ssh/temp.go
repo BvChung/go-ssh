@@ -8,21 +8,21 @@ import (
 	"time"
 )
 
-func contextCancellation(){
+func contextCancellation() {
 	var wg sync.WaitGroup
 
 	context.WithValue(context.TODO(), "a", 123)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	
-	for w:=0; w < 5; w++{
+
+	for w := 0; w < 5; w++ {
 		wg.Add(1)
 
 		randServer := rand.Int32N(5)
 
-		go func(n int, crashes bool, ctx context.Context, cancel context.CancelFunc){
-			defer func(){
+		go func(n int, crashes bool, ctx context.Context, cancel context.CancelFunc) {
+			defer func() {
 				fmt.Printf("Server %d shutting down\n", n)
 				wg.Done()
 			}()
@@ -36,7 +36,7 @@ func contextCancellation(){
 			} else {
 				crashDuration = 1000
 			}
-			
+
 			timer := time.NewTimer(time.Duration(crashDuration) * time.Second)
 
 			for {
@@ -52,7 +52,7 @@ func contextCancellation(){
 					time.Sleep(5 * time.Second)
 				}
 			}
-			
+
 		}(w, randServer == int32(w), ctx, cancel)
 	}
 
@@ -66,7 +66,7 @@ func blockTil(duration int) {
 		time.Sleep(time.Duration(duration) * time.Second)
 		done <- 0
 	}()
-	
+
 	<-done
 	fmt.Printf("Unblocked after %d seconds\n", duration)
 }

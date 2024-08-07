@@ -8,9 +8,9 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
+	db.GetDatabaseCredentials("new-db")
 	// server.Start()
 	// db.CreateDB()
-	db.GetDatabaseCredentials("new-db")
 	// db.ListDB()
 	// db.ValidateToken()
 }

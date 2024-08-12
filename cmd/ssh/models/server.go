@@ -28,28 +28,28 @@ type server struct {
 	*ssh.Server
 }
 
-func CreateApp() (*server, error) {
-	a := new(server)
+func CreateServer() (*server, error) {
+	svr := new(server)
 
-	server, err := wish.NewServer(
+	sshServer, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
-			bubbletea.MiddlewareWithProgramHandler(a.ProgramHandler, termenv.ANSI256),
+			bubbletea.MiddlewareWithProgramHandler(svr.ProgramHandler, termenv.ANSI256),
 			activeterm.Middleware(),
 			logging.Middleware(),
 		),
 	)
 
 	if err != nil {
-		return a, fmt.Errorf("could not start server, error %w", err)
+		return svr, fmt.Errorf("could not start server, error %w", err)
 	}
 
-	a.Server = server
-	return a, nil
+	svr.Server = sshServer
+	return svr, nil
 }
 
-func (a *server) Start() {
+func (svr *server) Start() {
 	var err error
 
 	done := make(chan os.Signal, 1)
@@ -58,7 +58,7 @@ func (a *server) Start() {
 	log.Info("Starting SSH server", "host", host, "port", port)
 
 	go func() {
-		if err = a.ListenAndServe(); err != nil {
+		if err = svr.ListenAndServe(); err != nil {
 			log.Error("Could not start server", "error", err)
 			done <- nil
 		}
@@ -71,15 +71,16 @@ func (a *server) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := a.Shutdown(ctx); err != nil {
+	if err := svr.Shutdown(ctx); err != nil {
 		log.Error("Could not stop server", "error", err)
 	}
 }
 
-func (a *server) ProgramHandler(s ssh.Session) *tea.Program {
+func (svr *server) ProgramHandler(session ssh.Session) *tea.Program {
 	model := NewModel()
-	model.server = a
-	model.id = s.User()
+	model.server = svr
+	model.id = session.User()
+	log.Infof("session public key %s\n", string(session.PublicKey().Marshal()))
 
-	return tea.NewProgram(model, bubbletea.MakeOptions(s)...)
+	return tea.NewProgram(model, bubbletea.MakeOptions(session)...)
 }

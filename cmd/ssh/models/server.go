@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"net"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/log"
+	tealog "github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	"github.com/charmbracelet/wish/activeterm"
@@ -55,24 +56,24 @@ func (svr *server) Start() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Info("Starting SSH server", "host", host, "port", port)
+	tealog.Info("Starting SSH server", "host", host, "port", port)
 
 	go func() {
 		if err = svr.ListenAndServe(); err != nil {
-			log.Error("Could not start server", "error", err)
+			tealog.Error("Could not start server", "error", err)
 			done <- nil
 		}
 	}()
 
 	<-done
 
-	log.Info("Stopping SSH server")
+	tealog.Info("Stopping SSH server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := svr.Shutdown(ctx); err != nil {
-		log.Error("Could not stop server", "error", err)
+		tealog.Error("Could not stop server", "error", err)
 	}
 }
 
@@ -80,7 +81,14 @@ func (svr *server) ProgramHandler(session ssh.Session) *tea.Program {
 	model := NewModel()
 	model.server = svr
 	model.id = session.User()
-	log.Infof("session public key %s\n", string(session.PublicKey().Marshal()))
+	hash := sha256.New()
+
+	if _, err := hash.Write(session.PublicKey().Marshal()); err != nil {
+		tealog.Fatal(err)
+	}
+
+	tealog.Infof("session public key %s\n", string(session.PublicKey().Marshal()))
+	tealog.Infof("%x\n", hash.Sum(nil))
 
 	return tea.NewProgram(model, bubbletea.MakeOptions(session)...)
 }

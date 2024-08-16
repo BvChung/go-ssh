@@ -1,4 +1,4 @@
-package models
+package serve
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BvChung/go-ssh/cmd/ssh/model"
 	tea "github.com/charmbracelet/bubbletea"
 	tealog "github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
@@ -78,17 +79,22 @@ func (svr *server) Start() {
 }
 
 func (svr *server) ProgramHandler(session ssh.Session) *tea.Program {
-	model := NewModel()
-	model.server = svr
-	model.id = session.User()
-	hash := sha256.New()
+	model := model.NewModel()
+	model.Id = session.User()
+	pubKey := session.PublicKey()
 
-	if _, err := hash.Write(session.PublicKey().Marshal()); err != nil {
-		tealog.Fatal(err)
+	if pubKey != nil {
+		hash := sha256.New()
+		if _, err := hash.Write(session.PublicKey().Marshal()); err != nil {
+			tealog.Fatal(err)
+		}
+
+		tealog.Infof("session public key %s\n", string(session.PublicKey().Marshal()))
+		tealog.Infof("%x\n", hash.Sum(nil))
+	} else {
+		tealog.Info("Public key is nil")
 	}
 
-	tealog.Infof("session public key %s\n", string(session.PublicKey().Marshal()))
-	tealog.Infof("%x\n", hash.Sum(nil))
-
+	
 	return tea.NewProgram(model, bubbletea.MakeOptions(session)...)
 }

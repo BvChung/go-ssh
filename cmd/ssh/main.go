@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/BvChung/go-ssh/cmd/ssh/db"
+	"github.com/BvChung/go-ssh/cmd/ssh/serve"
 	"github.com/joho/godotenv"
 )
 
@@ -12,14 +12,14 @@ func main() {
 		log.Fatal("Unable to load env")
 	}
 
-	// server, err := models.CreateServer()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	server, err := serve.CreateServer()
+	if err != nil {
+		log.Fatal(err)
+	}
+	server.Start()
 
 	// db.GetDatabaseCredentials("new-db")
-	db.CreateDatabaseToken("new-db")
-	// server.Start()
+	// db.CreateDatabaseToken("new-db")
 	// db.CreateDB()
 	// db.ListDB()
 	// db.ValidateToken()
